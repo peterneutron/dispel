@@ -2,7 +2,7 @@ SHELL := /bin/bash
 
 # Config
 PROJECT := Dispel/Dispel.xcodeproj
-SCHEME := Dispel
+SCHEME := Release
 CONFIGURATION := Release
 BUILD_DIR := build
 ARCHIVE := $(BUILD_DIR)/$(SCHEME).xcarchive
