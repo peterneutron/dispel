@@ -4,6 +4,7 @@ import Cocoa
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusMenuController: StatusMenuController!
     private let eventTapManager = EventTapManager()
+    private var axPollTimer: Timer?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -40,8 +41,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         statusMenuController.onRequestAXPrompt = { [weak self] in
-            self?.eventTapManager.promptForAccessibilityIfNeeded()
-            self?.statusMenuController.updateAXAuthorized(self?.eventTapManager.isAccessibilityTrusted ?? false)
+            guard let self = self else { return }
+            self.eventTapManager.promptForAccessibilityIfNeeded()
+            self.openAccessibilityPreferences()
+            if self.eventTapManager.isAccessibilityTrusted {
+                self.eventTapManager.start()
+            } else {
+                self.beginAXAuthorizationPolling()
+            }
+            self.statusMenuController.updateAXAuthorized(self.eventTapManager.isAccessibilityTrusted)
         }
 
         eventTapManager.onStatusChange = { [weak self] status in
@@ -58,10 +66,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Start monitoring; if AX missing, UI will reflect it
         eventTapManager.start()
-        statusMenuController.updateAXAuthorized(eventTapManager.isAccessibilityTrusted)
+        let trusted = eventTapManager.isAccessibilityTrusted
+        statusMenuController.updateAXAuthorized(trusted)
+        if !trusted {
+            beginAXAuthorizationPolling()
+        }
     }
 
-    func applicationWillTerminate(_ notification: Notification) { }
+    private func beginAXAuthorizationPolling() {
+        axPollTimer?.invalidate()
+        axPollTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
+            guard let self = self else {
+                timer.invalidate()
+                return
+            }
+            let trusted = self.eventTapManager.isAccessibilityTrusted
+            self.statusMenuController.updateAXAuthorized(trusted)
+            if trusted {
+                timer.invalidate()
+                self.axPollTimer = nil
+                self.eventTapManager.start()
+            }
+        }
+    }
+
+    private func openAccessibilityPreferences() {
+        guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") else { return }
+        NSWorkspace.shared.open(url)
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        axPollTimer?.invalidate()
+        axPollTimer = nil
+    }
 }
 
 enum DefaultsKeys {
