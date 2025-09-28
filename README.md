@@ -18,25 +18,32 @@ Menubar app for macOS that suppresses accidental tap‑to‑clicks while typing.
 ## Why this exists
 Some users observe “ghost taps” while typing (often a palm grazing the trackpad), which can move the insertion point and cause text to jump. Dispel blocks clicks for a short window after keys are pressed to avoid those stray taps.
 
-## Build
+## Build & Signing
 
 Prerequisites
 - Xcode 16+
+- Xcode command line tools (`xcode-select --install`) for the signing helper
 - macOS 15+ on Apple Silicon
 
-Options
+Workflow options
 - Xcode: open `Dispel/Dispel.xcodeproj` and run the `Dispel` scheme.
-- Makefile: run `make build` to archive and export the app into `./build`.
+- Makefile: pick the lane that matches the type of build you need (see below).
 
-Make targets
-- `make build` → `build/Dispel.xcarchive` and `build/Dispel.app`
-- `make archive` → `build/Dispel.xcarchive`
-- `make export` → export `.app` using `ExportOptions.plist` into `./build`
-- `make open` → open the exported app
-- `make clean` → remove `./build`
+Make lanes
+- `make build` – unsigned local build (default). Equivalent to running `make` with no target and produces `build/Dispel.app` with code signing disabled.
+- `make devsigned` – development-signed build. Uses automatic signing with your Apple Development certificate and places the signed app in `build/Dispel.app`.
+- `make archive` – distribution archive for maintainers. Creates `build/Dispel.xcarchive` using manual signing.
+- `make export` – exports a notarizable `.app` from the most recent archive using `ExportOptions.plist`.
+- `make package` – zips the `.app` into `build/Dispel.zip`.
+- `make clean` – removes the entire `build/` directory.
+
+Selecting a signing identity
+- Set `SIGNING_IDENTITY="Apple Development: Your Name (TEAMID)"` when invoking `make devsigned` or `make archive` if you already know the identity you want.
+- If `SIGNING_IDENTITY` is unset, the Makefile runs `scripts/select_signing_identity.sh`, which lists the valid code signing identities discovered via the `security` tool and prompts you to pick one.
+- The helper script requires the Xcode command line tools and at least one Apple Development certificate in your login keychain.
 
 Export options
-- The Makefile uses `./ExportOptions.plist`. Adjust its contents if you need specific signing/export behaviors.
+- `make export` relies on `./ExportOptions.plist`. Adjust it if you need different export styles (e.g., Developer ID vs. App Store).
 
 ## Run and grant permission
 1) Launch Dispel; an icon appears in the menu bar.
