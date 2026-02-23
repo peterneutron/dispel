@@ -1,5 +1,6 @@
 import AppKit
 import Cocoa
+import ServiceManagement
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusMenuController: StatusMenuController!
@@ -14,6 +15,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let savedTrigger = UserDefaults.standard.string(forKey: DefaultsKeys.trigger) ?? "keyUp"
         let savedBlockDown = (UserDefaults.standard.object(forKey: DefaultsKeys.blockMouseDown) as? Bool) ?? true
         let savedBlockUp = (UserDefaults.standard.object(forKey: DefaultsKeys.blockMouseUp) as? Bool) ?? false
+        let runAtLoginEnabled = isRunAtLoginEnabled()
 
         statusMenuController = StatusMenuController(
             initialDelayMs: savedDelay,
@@ -21,6 +23,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             initialTrigger: savedTrigger,
             initialBlockMouseDown: savedBlockDown,
             initialBlockMouseUp: savedBlockUp,
+            initialRunAtLoginEnabled: runAtLoginEnabled,
             onDelayChanged: { [weak self] newDelay in
                 self?.eventTapManager.delayMs = newDelay
             },
@@ -33,6 +36,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             onBlockingChanged: { [weak self] blockDown, blockUp in
                 self?.eventTapManager.blockMouseDown = blockDown
                 self?.eventTapManager.blockMouseUp = blockUp
+            },
+            onRunAtLoginChanged: { [weak self] enabled in
+                self?.setRunAtLogin(enabled) ?? false
             }
         )
 
@@ -98,6 +104,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         axPollTimer?.invalidate()
         axPollTimer = nil
+    }
+
+    private func isRunAtLoginEnabled() -> Bool {
+        SMAppService.mainApp.status == .enabled
+    }
+
+    @discardableResult
+    private func setRunAtLogin(_ enabled: Bool) -> Bool {
+        do {
+            if enabled {
+                try SMAppService.mainApp.register()
+            } else {
+                try SMAppService.mainApp.unregister()
+            }
+            return isRunAtLoginEnabled()
+        } catch {
+            NSLog("Failed to update Run at Login: \(error.localizedDescription)")
+            NSSound.beep()
+            return isRunAtLoginEnabled()
+        }
     }
 }
 
