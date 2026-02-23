@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "2600"
+   LastUpgradeVersion = "1430"
    version = "1.7">
    <BuildAction
       parallelizeBuildables = "YES"
       buildImplicitDependencies = "YES"
-      buildArchitectures = "Automatic">
+      runPostActionsOnFailure = "NO">
       <BuildActionEntries>
          <BuildActionEntry
             buildForTesting = "YES"
@@ -15,7 +15,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "9EBDF42F2E7412B30064BDC6"
+               BlueprintIdentifier = "0DB807FB5006B649B69860FE"
                BuildableName = "Dispel.app"
                BlueprintName = "Dispel"
                ReferencedContainer = "container:Dispel.xcodeproj">
@@ -28,31 +28,31 @@
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       shouldUseLaunchSchemeArgsEnv = "YES"
-      shouldAutocreateTestPlan = "YES">
+      onlyGenerateCoverageForSpecifiedTargets = "NO">
+      <MacroExpansion>
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "0DB807FB5006B649B69860FE"
+            BuildableName = "Dispel.app"
+            BlueprintName = "Dispel"
+            ReferencedContainer = "container:Dispel.xcodeproj">
+         </BuildableReference>
+      </MacroExpansion>
       <Testables>
          <TestableReference
             skipped = "NO"
-            parallelizable = "YES">
+            parallelizable = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "9EBDF43C2E7412B40064BDC6"
+               BlueprintIdentifier = "F82BA8E7DF5DD1C72C642111"
                BuildableName = "DispelTests.xctest"
                BlueprintName = "DispelTests"
                ReferencedContainer = "container:Dispel.xcodeproj">
             </BuildableReference>
          </TestableReference>
-         <TestableReference
-            skipped = "NO"
-            parallelizable = "YES">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "9EBDF4462E7412B40064BDC6"
-               BuildableName = "DispelUITests.xctest"
-               BlueprintName = "DispelUITests"
-               ReferencedContainer = "container:Dispel.xcodeproj">
-            </BuildableReference>
-         </TestableReference>
       </Testables>
+      <CommandLineArguments>
+      </CommandLineArguments>
    </TestAction>
    <LaunchAction
       buildConfiguration = "Debug"
@@ -68,7 +68,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "9EBDF42F2E7412B30064BDC6"
+            BlueprintIdentifier = "0DB807FB5006B649B69860FE"
             BuildableName = "Dispel.app"
             BlueprintName = "Dispel"
             ReferencedContainer = "container:Dispel.xcodeproj">
@@ -85,7 +85,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "9EBDF42F2E7412B30064BDC6"
+            BlueprintIdentifier = "0DB807FB5006B649B69860FE"
             BuildableName = "Dispel.app"
             BlueprintName = "Dispel"
             ReferencedContainer = "container:Dispel.xcodeproj">
