@@ -13,11 +13,11 @@ final class EventTapManager {
     // Public controls
     enum Trigger: String { case keyDown, keyUp }
     var trigger: Trigger = .keyUp { didSet { /* applies on next key event */ } }
-    var delayMs: Int = 200 { didSet { if delayMs < 0 { delayMs = 0 }; restartSuppressionIfNeeded() } }
-    var activationDelayMs: Int = 20 { didSet { if activationDelayMs < 0 { activationDelayMs = 0 }; restartSuppressionIfNeeded() } }
+    var delayMs: Int = 200 { didSet { normalizeDelaySettings(); handleConfigurationChange() } }
+    var activationDelayMs: Int = 20 { didSet { normalizeDelaySettings(); handleConfigurationChange() } }
     var blockMouseDown: Bool = true
     var blockMouseUp: Bool = false
-    var isEnabled: Bool = true { didSet { /* no-op; evaluated in callback */ } }
+    var isEnabled: Bool = true { didSet { handleEnablementChange() } }
 
     // Callbacks
     var onStatusChange: ((Status) -> Void)?
@@ -28,6 +28,7 @@ final class EventTapManager {
     private var startTimer: DispatchSourceTimer?
     private var endTimer: DispatchSourceTimer?
     private let timerQueue = DispatchQueue(label: "com.dispel.timer")
+    private let stateLock = NSLock()
     private var suppressionStart: DispatchTime?
     private var suppressionEnd: DispatchTime?
 
@@ -43,7 +44,7 @@ final class EventTapManager {
 
     func start() {
         guard isAccessibilityTrusted else {
-            onStatusChange?(.noPermission)
+            emitStatus(.noPermission)
             return
         }
 
@@ -72,7 +73,7 @@ final class EventTapManager {
             callback: callback,
             userInfo: selfPtr
         ) else {
-            onStatusChange?(.error)
+            emitStatus(.error)
             return
         }
 
@@ -81,22 +82,31 @@ final class EventTapManager {
         if let src = runLoopSource {
             CFRunLoopAddSource(CFRunLoopGetCurrent(), src, .commonModes)
             CGEvent.tapEnable(tap: tap, enable: true)
-            onStatusChange?(isEnabled && delayMs > 0 ? .active : .off)
+            emitStatus(isEnabled && delayMs > 0 ? .active : .off)
         }
 
-        configureTimers()
+        ensureTimersConfigured()
     }
 
     func stop() {
-        startTimer?.cancel(); startTimer = nil
-        endTimer?.cancel(); endTimer = nil
+        stateLock.lock()
+        let startTimer = self.startTimer
+        let endTimer = self.endTimer
+        self.startTimer = nil
+        self.endTimer = nil
+        suppressionStart = nil
+        suppressionEnd = nil
+        stateLock.unlock()
+
+        startTimer?.cancel()
+        endTimer?.cancel()
         if let src = runLoopSource {
             CFRunLoopRemoveSource(CFRunLoopGetCurrent(), src, .commonModes)
         }
         runLoopSource = nil
         if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: false) }
         eventTap = nil
-        onStatusChange?(.off)
+        emitStatus(.off)
     }
 
     private func handleEvent(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
@@ -133,46 +143,107 @@ final class EventTapManager {
     }
 
     private var isSuppressionActive: Bool {
-        guard let start = suppressionStart, let end = suppressionEnd else { return false }
+        stateLock.lock()
+        let start = suppressionStart
+        let end = suppressionEnd
+        stateLock.unlock()
+        guard let start, let end else { return false }
         let now = DispatchTime.now()
         return now >= start && now < end
     }
 
-    private func configureTimers() {
-        startTimer?.cancel(); startTimer = nil
-        endTimer?.cancel(); endTimer = nil
-        startTimer = DispatchSource.makeTimerSource(queue: timerQueue)
-        endTimer = DispatchSource.makeTimerSource(queue: timerQueue)
-        startTimer?.setEventHandler { [weak self] in
+    private func ensureTimersConfigured() {
+        stateLock.lock()
+        if startTimer != nil && endTimer != nil {
+            stateLock.unlock()
+            return
+        }
+
+        let startTimer = DispatchSource.makeTimerSource(queue: timerQueue)
+        let endTimer = DispatchSource.makeTimerSource(queue: timerQueue)
+        self.startTimer = startTimer
+        self.endTimer = endTimer
+        stateLock.unlock()
+
+        startTimer.setEventHandler { [weak self] in
             guard let self = self else { return }
+            self.stateLock.lock()
             let end = self.suppressionEnd ?? (DispatchTime.now() + .milliseconds(self.delayMs))
             self.suppressionStart = DispatchTime.now()
             self.suppressionEnd = end
+            self.stateLock.unlock()
         }
-        endTimer?.setEventHandler { [weak self] in
-            self?.suppressionStart = nil
-            self?.suppressionEnd = nil
-            DispatchQueue.main.async { self?.onStatusChange?( (self?.isEnabled ?? false) && (self?.delayMs ?? 0) > 0 ? .active : .off ) }
+        endTimer.setEventHandler { [weak self] in
+            guard let self = self else { return }
+            self.stateLock.lock()
+            self.suppressionStart = nil
+            self.suppressionEnd = nil
+            self.stateLock.unlock()
+            self.emitStatus((self.isEnabled && self.delayMs > 0) ? .active : .off)
         }
-        startTimer?.resume()
-        endTimer?.resume()
+        startTimer.resume()
+        endTimer.resume()
     }
 
     private func armSuppressionTimers() {
         let delay = max(0, delayMs)
         let activation = max(0, activationDelayMs)
-        if delay == 0 { suppressionStart = nil; suppressionEnd = nil; return }
-        configureTimers()
+        if delay == 0 {
+            clearSuppressionWindow()
+            return
+        }
+        ensureTimersConfigured()
         let start = DispatchTime.now() + .milliseconds(activation)
         let end = start + .milliseconds(delay)
+        stateLock.lock()
         suppressionStart = start
         suppressionEnd = end
+        let startTimer = self.startTimer
+        let endTimer = self.endTimer
+        stateLock.unlock()
         startTimer?.schedule(deadline: start)
         endTimer?.schedule(deadline: end)
-        onStatusChange?(.active)
+        emitStatus(.active)
     }
 
-    private func restartSuppressionIfNeeded() {
-        if isEnabled && delayMs > 0 { armSuppressionTimers() } else { suppressionStart = nil; suppressionEnd = nil; onStatusChange?(.off) }
+    private func normalizeDelaySettings() {
+        if delayMs < 0 { delayMs = 0 }
+        if activationDelayMs < 0 { activationDelayMs = 0 }
+    }
+
+    private func handleConfigurationChange() {
+        // Settings changes should affect future trigger events, not arm suppression immediately.
+        if !isEnabled || delayMs == 0 {
+            clearSuppressionWindow()
+            emitStatus(.off)
+        }
+    }
+
+    private func handleEnablementChange() {
+        if isEnabled {
+            if eventTap != nil {
+                emitStatus(delayMs > 0 ? .active : .off)
+            }
+            return
+        }
+        clearSuppressionWindow()
+        emitStatus(.off)
+    }
+
+    private func clearSuppressionWindow() {
+        stateLock.lock()
+        suppressionStart = nil
+        suppressionEnd = nil
+        stateLock.unlock()
+    }
+
+    private func emitStatus(_ status: Status) {
+        if Thread.isMainThread {
+            onStatusChange?(status)
+        } else {
+            DispatchQueue.main.async { [weak self] in
+                self?.onStatusChange?(status)
+            }
+        }
     }
 }
