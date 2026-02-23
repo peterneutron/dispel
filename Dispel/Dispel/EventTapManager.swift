@@ -247,3 +247,21 @@ final class EventTapManager {
         }
     }
 }
+
+#if DEBUG
+extension EventTapManager {
+    var debugHasSuppressionWindow: Bool {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return suppressionStart != nil && suppressionEnd != nil
+    }
+
+    func debugArmSuppressionForTests() {
+        armSuppressionTimers()
+    }
+
+    func debugEmitStatusForTests(_ status: Status) {
+        emitStatus(status)
+    }
+}
+#endif
