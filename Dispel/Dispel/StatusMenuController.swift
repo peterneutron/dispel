@@ -23,6 +23,7 @@ final class StatusMenuController: NSObject {
     private let blockingMenu = NSMenu()
     private let blockDownItem = NSMenuItem(title: "Mouse Down", action: #selector(toggleBlockPhase(_:)), keyEquivalent: "")
     private let blockUpItem = NSMenuItem(title: "Mouse Up", action: #selector(toggleBlockPhase(_:)), keyEquivalent: "")
+    private let runAtLoginItem = NSMenuItem(title: "Run at Login", action: #selector(toggleRunAtLogin(_:)), keyEquivalent: "")
     private let activationSlider = NSSlider(value: 40, minValue: 0, maxValue: 100, target: nil, action: nil)
     private let activationLabel = NSTextField(labelWithString: "Activation delay: 40 ms")
 
@@ -34,10 +35,12 @@ final class StatusMenuController: NSObject {
          initialTrigger: String,
          initialBlockMouseDown: Bool,
          initialBlockMouseUp: Bool,
+         initialRunAtLoginEnabled: Bool,
          onDelayChanged: @escaping (Int) -> Void,
          onActivationDelayChanged: @escaping (Int) -> Void,
          onTriggerChanged: @escaping (String) -> Void,
-         onBlockingChanged: @escaping (Bool, Bool) -> Void) {
+         onBlockingChanged: @escaping (Bool, Bool) -> Void,
+         onRunAtLoginChanged: @escaping (Bool) -> Bool) {
         super.init()
 
         // Default icon; will be updated by updateStatus(_:)
@@ -123,10 +126,13 @@ final class StatusMenuController: NSObject {
         blockingMenu.items = [blockDownItem, blockUpItem]
         blockingParentItem.submenu = blockingMenu
 
+        runAtLoginItem.target = self
+        runAtLoginItem.state = initialRunAtLoginEnabled ? .on : .off
+
         // Apply initial trigger selection
         setTriggerMenuState(trigger: initialTrigger)
 
-        advancedMenu.items = [triggerParentItem, blockingParentItem, .separator(), activationSliderItem]
+        advancedMenu.items = [triggerParentItem, blockingParentItem, runAtLoginItem, .separator(), activationSliderItem]
         advancedItem.submenu = advancedMenu
 
         // Status line
@@ -155,6 +161,7 @@ final class StatusMenuController: NSObject {
         self.onActivationDelayChanged = onActivationDelayChanged
         self.onTriggerChanged = onTriggerChanged
         self.onBlockingChanged = onBlockingChanged
+        self.onRunAtLoginChanged = onRunAtLoginChanged
         onDelayChanged(initialDelayMs)
         onActivationDelayChanged(initialActivationDelayMs)
         onTriggerChanged(initialTrigger)
@@ -165,6 +172,7 @@ final class StatusMenuController: NSObject {
     private var onActivationDelayChanged: ((Int) -> Void)?
     private var onTriggerChanged: ((String) -> Void)?
     private var onBlockingChanged: ((Bool, Bool) -> Void)?
+    private var onRunAtLoginChanged: ((Bool) -> Bool)?
 
     func updateStatus(status: EventTapManager.Status) {
         statusItemText.title = "Status: \(status.rawValue)"
@@ -227,6 +235,12 @@ final class StatusMenuController: NSObject {
             UserDefaults.standard.set(sender.state == .on, forKey: DefaultsKeys.blockMouseUp)
         }
         onBlockingChanged?(blockDownItem.state == .on, blockUpItem.state == .on)
+    }
+
+    @objc private func toggleRunAtLogin(_ sender: NSMenuItem) {
+        let requested = sender.state != .on
+        let applied = onRunAtLoginChanged?(requested) ?? requested
+        sender.state = applied ? .on : .off
     }
 
     @objc private func requestAX() { onRequestAXPrompt?() }
