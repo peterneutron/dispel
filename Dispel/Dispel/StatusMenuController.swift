@@ -10,6 +10,7 @@ final class StatusMenuController: NSObject {
 
     private let slider = NSSlider(value: 200, minValue: 0, maxValue: 1000, target: nil, action: nil)
     private let sliderLabel = NSTextField(labelWithString: "Delay: 200 ms")
+    private let enableCheckbox = NSButton(checkboxWithTitle: "Enable", target: nil, action: nil)
 
     // Advanced submenu: activation delay + trigger + blocking
     private let advancedItem = NSMenuItem(title: "Advanced", action: nil, keyEquivalent: "")
@@ -31,6 +32,7 @@ final class StatusMenuController: NSObject {
     var onRequestAXPrompt: (() -> Void)?
 
     init(initialDelayMs: Int,
+         initialEnabled: Bool,
          initialActivationDelayMs: Int,
          initialTrigger: String,
          initialBlockMouseDown: Bool,
@@ -65,7 +67,13 @@ final class StatusMenuController: NSObject {
         sliderLabel.textColor = .secondaryLabelColor
         sliderLabel.stringValue = "Delay: \(initialDelayMs) ms"
 
-        container.addArrangedSubview(sliderLabel)
+        enableCheckbox.setButtonType(.switch)
+        enableCheckbox.target = self
+        enableCheckbox.action = #selector(toggleEnabled(_:))
+        enableCheckbox.state = initialEnabled ? .on : .off
+        enableCheckbox.font = .systemFont(ofSize: 12)
+
+        container.addArrangedSubview(makeSliderHeaderRow())
         container.addArrangedSubview(slider)
 
         let view = NSView(frame: NSRect(x: 0, y: 0, width: 240, height: 64))
@@ -155,6 +163,7 @@ final class StatusMenuController: NSObject {
 
         // Persist
         UserDefaults.standard.set(initialDelayMs, forKey: DefaultsKeys.delayMs)
+        UserDefaults.standard.set(initialEnabled, forKey: DefaultsKeys.enabled)
         UserDefaults.standard.set(initialActivationDelayMs, forKey: DefaultsKeys.activationDelayMs)
 
         self.onDelayChanged = onDelayChanged
@@ -198,6 +207,12 @@ final class StatusMenuController: NSObject {
         sliderLabel.stringValue = "Delay: \(snapped) ms"
         UserDefaults.standard.set(snapped, forKey: DefaultsKeys.delayMs)
         onDelayChanged?(snapped)
+    }
+
+    @objc private func toggleEnabled(_ sender: NSButton) {
+        let enabled = sender.state == .on
+        UserDefaults.standard.set(enabled, forKey: DefaultsKeys.enabled)
+        onEnableChanged?(enabled)
     }
 
     @objc private func activationSliderChanged() {
@@ -246,6 +261,22 @@ final class StatusMenuController: NSObject {
     @objc private func requestAX() { onRequestAXPrompt?() }
 
     @objc private func quit() { NSApp.terminate(nil) }
+
+    private func makeSliderHeaderRow() -> NSStackView {
+        let row = NSStackView()
+        row.orientation = .horizontal
+        row.alignment = .centerY
+        row.spacing = 8
+
+        let spacer = NSView()
+        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        spacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
+        row.addArrangedSubview(sliderLabel)
+        row.addArrangedSubview(spacer)
+        row.addArrangedSubview(enableCheckbox)
+        return row
+    }
 }
 
 // Helper view wrapper for NSMenuItem custom view sizing

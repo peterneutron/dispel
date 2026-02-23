@@ -11,6 +11,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
 
         let savedDelay = (UserDefaults.standard.object(forKey: DefaultsKeys.delayMs) as? Int) ?? 200
+        let savedEnabled = (UserDefaults.standard.object(forKey: DefaultsKeys.enabled) as? Bool) ?? true
         let savedActivation = (UserDefaults.standard.object(forKey: DefaultsKeys.activationDelayMs) as? Int) ?? 20
         let savedTrigger = UserDefaults.standard.string(forKey: DefaultsKeys.trigger) ?? "keyUp"
         let savedBlockDown = (UserDefaults.standard.object(forKey: DefaultsKeys.blockMouseDown) as? Bool) ?? true
@@ -19,6 +20,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         statusMenuController = StatusMenuController(
             initialDelayMs: savedDelay,
+            initialEnabled: savedEnabled,
             initialActivationDelayMs: savedActivation,
             initialTrigger: savedTrigger,
             initialBlockMouseDown: savedBlockDown,
@@ -68,7 +70,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         eventTapManager.trigger = (savedTrigger == "keyDown") ? .keyDown : .keyUp
         eventTapManager.blockMouseDown = savedBlockDown
         eventTapManager.blockMouseUp = savedBlockUp
-        eventTapManager.isEnabled = savedDelay > 0
+        eventTapManager.isEnabled = savedEnabled
 
         // Start monitoring; if AX missing, UI will reflect it
         eventTapManager.start()
@@ -107,7 +109,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func isRunAtLoginEnabled() -> Bool {
-        SMAppService.mainApp.status == .enabled
+        let status = SMAppService.mainApp.status
+        return status == .enabled || status == .requiresApproval
     }
 
     @discardableResult
@@ -129,6 +132,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 enum DefaultsKeys {
     static let delayMs = "delayMs"
+    static let enabled = "enabled"
     static let activationDelayMs = "activationDelayMs"
     static let trigger = "trigger"
     static let blockMouseDown = "blockMouseDown"
