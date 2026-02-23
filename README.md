@@ -1,87 +1,114 @@
 # Dispel
 
-Menubar app for macOS that suppresses accidental tap‑to‑clicks while typing. It helps prevent the “cursor jumps while typing” problem caused by stray trackpad taps.
+Dispel is a macOS menu bar app that reduces accidental trackpad clicks while typing.
 
-- macOS 15+ (Sequoia), Apple Silicon (arm64) only
-- Accessibility permission required (no root, no daemons)
-- Built with AppKit; lives in the menu bar (no Dock icon)
+It works by briefly suppressing mouse click events after keyboard activity, which helps prevent cursor jumps caused by stray taps or palm contact.
 
-## Features
-- Suppression delay slider: 0–1000 ms in 100 ms steps (0 = off)
-- Advanced controls:
-  - Activation delay (default 20 ms, range 0–100 ms in 10 ms steps)
-  - Trigger on Key Down or Key Up (default Key Up)
-  - Select which mouse phases to block: Mouse Down (default on), Mouse Up (default off)
-- Recovers automatically if the system disables the event tap by timeout
-- Low CPU overhead; immediate live changes
+## Highlights
 
-## Why this exists
-Some users observe “ghost taps” while typing (often a palm grazing the trackpad), which can move the insertion point and cause text to jump. Dispel blocks clicks for a short window after keys are pressed to avoid those stray taps.
+- Menu bar app (no Dock icon)
+- Adjustable suppression delay (`0-1000 ms`)
+- Inline `Enable` toggle for quick on/off control
+- Advanced options:
+  - Activation delay
+  - Trigger on key down / key up
+  - Block mouse down and/or mouse up
+  - Run at Login
+- No daemon, no kernel extension, no root privileges
+- Local-only processing (uses macOS Accessibility APIs)
 
-## Build & Signing
+## Requirements
 
-Prerequisites
+- macOS 15+ (Sequoia)
+- Apple Silicon (arm64)
+- Accessibility permission (required to intercept input events)
+
+## Install / Run
+
+### Option 1: Xcode (recommended for development)
+
+1. Open `Dispel/Dispel.xcodeproj`
+2. Run the `Dispel` scheme
+3. Grant Accessibility permission when prompted
+
+### Option 2: Makefile
+
+Prerequisites:
 - Xcode 16+
-- Xcode command line tools (`xcode-select --install`) for the signing helper
-- macOS 15+ on Apple Silicon
+- Xcode command line tools (`xcode-select --install`)
+- `xcodegen` (for regenerating/verifying the project)
 
-Workflow options
-- Xcode: open `Dispel/Dispel.xcodeproj` and run the `Dispel` scheme.
-- Makefile: pick the lane that matches the type of build you need (see below).
+Common targets:
+- `make build` (or just `make`) - unsigned local build at `build/Dispel.app`
+- `make devsigned` - development-signed build
+- `make test` - unit tests (`DispelTests`)
+- `make lint` - SwiftLint checks
+- `make verify` - xcodegen check + lint + build + tests
+- `make xcodegen` - regenerate `Dispel.xcodeproj` from `Dispel/project.yml`
+- `make xcodegen-check` - verify the checked-in project is in sync
 
-Make lanes
-- `make build` – unsigned local build (default). Equivalent to running `make` with no target and produces `build/Dispel.app` with code signing disabled.
-- `make devsigned` – development-signed build. Uses automatic signing with your Apple Development certificate and places the signed app in `build/Dispel.app`.
-- `make archive` – distribution archive for maintainers. Creates `build/Dispel.xcarchive` using manual signing.
-- `make export` – exports a notarizable `.app` from the most recent archive using `ExportOptions.plist`.
-- `make package` – zips the `.app` into `build/Dispel.zip`.
-- `make clean` – removes the entire `build/` directory.
+Packaging / release targets:
+- `make archive`
+- `make export`
+- `make package`
 
-Selecting a signing identity
-- Set `SIGNING_IDENTITY="Apple Development: Your Name (TEAMID)"` when invoking `make devsigned` or `make archive` if you already know the identity you want.
-- If `SIGNING_IDENTITY` is unset, the Makefile runs `scripts/select_signing_identity.sh`, which lists the valid code signing identities discovered via the `security` tool and prompts you to pick one.
-- The helper script requires the Xcode command line tools and at least one Apple Development certificate in your login keychain.
+## First Launch
 
-Export options
-- `make export` relies on `./ExportOptions.plist`. Adjust it if you need different export styles (e.g., Developer ID vs. App Store).
+1. Launch Dispel
+2. Click the menu bar icon
+3. Click `Grant Accessibility Permission…`
+4. Enable Dispel in:
+   `System Settings -> Privacy & Security -> Accessibility`
 
-## Run and grant permission
-1) Launch Dispel; an icon appears in the menu bar.
-2) Open the menu and click “Grant Accessibility Permission…”.
-3) In System Settings → Privacy & Security → Accessibility, enable Dispel. The status in the menu should show “Active” once permission is granted and suppression is on.
+The menu status should switch to `Active` when permission is granted and suppression is enabled.
 
 ## Usage
-- Set the suppression delay with the main slider. 200–300 ms is a good starting point; 0 ms disables suppression entirely.
-- If Finder rename or other click‑to‑focus flows feel blocked, increase the Activation delay to 20–40 ms (Advanced).
-- For maximum protection, set Trigger = Key Down and optionally block Mouse Up (Advanced), noting this can interfere a bit more with click‑to‑focus.
 
-## Defaults
-- Trigger: Key Up
-- Block phases: Mouse Down (on), Mouse Up (off)
-- Activation delay: 20 ms
-- Suppression delay: set by your slider (default 200 ms on first run)
+### Basic control
 
-## Settings storage
-- Uses UserDefaults (per-user). Keys:
-  - `delayMs`, `activationDelayMs`, `trigger` ("keyDown"/"keyUp"), `blockMouseDown` (Bool), `blockMouseUp` (Bool)
-- On a sandboxed build, values are stored under the app’s container preferences plist.
+- Use the `Delay` slider to set the suppression window
+- Use the `Enable` checkbox (right side of the Delay row) to turn suppression on/off without changing your saved delay
 
-## Troubleshooting
-- No effect on clicks: ensure Accessibility permission is ON; relaunch the app after enabling.
-- Finder rename glitches: keep Trigger = Key Up and use Activation delay ~20–40 ms.
-- Over‑blocking: reduce suppression delay, uncheck “Mouse Up”, or set Trigger = Key Up.
-- Under‑blocking: increase suppression delay; reduce or zero Activation delay; consider Trigger = Key Down and block both phases.
-- After sleep the app stops blocking: it should auto‑recover; if not, toggle suppression or relaunch the app.
+### Advanced options
 
-## Security & Privacy
-- Dispel requests Accessibility permission to observe/modify input events locally. It does not log keystrokes or send data anywhere.
-- No network access required; no background daemons installed.
+- `Activation delay`: wait before suppression begins (helps click-to-focus flows)
+- `Trigger`: choose `On Key Down` or `On Key Up`
+- `Block Phases`: choose whether to block mouse down and/or mouse up
+- `Run at Login`: starts Dispel automatically when you log in
 
-## Roadmap
-- Start at login (via SMAppService) — optional
-- One‑click presets (e.g., “Aggressive mode”)
-- Experimental “trackpad‑only” filtering (best effort via IOKit)
+## Tuning Tips
+
+- Good starting point: `200-300 ms`
+- If Finder rename or click-to-focus feels blocked:
+  - Keep trigger on `Key Up`
+  - Increase activation delay to `20-40 ms`
+- If under-blocking persists:
+  - Increase delay
+  - Reduce activation delay
+  - Try trigger on `Key Down`
+  - Optionally block both mouse phases
+
+## Privacy & Security
+
+- Dispel uses Accessibility permission to observe and filter input events locally
+- It does not send input data anywhere
+- No network service or background daemon is required
+
+## Project Layout
+
+- `Dispel/` - app source + Xcode project + `project.yml`
+- `scripts/` - signing and xcodegen helper scripts
+- `Makefile` - local build/test/release workflows
+
+## Contributing
+
+If you modify project structure or build settings, regenerate the Xcode project and commit the result:
+
+```bash
+make xcodegen
+make xcodegen-check
+```
 
 ## Acknowledgements
-- Inspired by [TouchGuard](https://github.com/thesyntaxinator/TouchGuard).
-- Google Gemini and OpenAI GPT families of models and all the labs involved making these possible 🙏
+
+- Inspired by [TouchGuard](https://github.com/thesyntaxinator/TouchGuard)
