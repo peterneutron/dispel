@@ -185,6 +185,7 @@
 				};
 			};
 			buildConfigurationList = CBBD565E6FFA7C7592E56E7C /* Build configuration list for PBXProject "Dispel" */;
+			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -194,7 +195,6 @@
 			mainGroup = 94B093CC8CDACCD9022336BF;
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
-			productRefGroup = F5ED87D91EBB83D71B3A0346 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
