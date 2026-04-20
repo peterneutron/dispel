@@ -7,6 +7,8 @@ XCODEGEN_ROOT="${PROJECT_ROOT}/Dispel"
 SPEC_FILE="${XCODEGEN_ROOT}/project.yml"
 PROJECT_PATH="${XCODEGEN_ROOT}/Dispel.xcodeproj"
 PBXPROJ_PATH="${PROJECT_PATH}/project.pbxproj"
+XCODEGEN_SPEC="./Dispel/project.yml"
+XCODEGEN_PROJECT="./Dispel"
 
 if ! command -v xcodegen >/dev/null 2>&1; then
   echo "error: xcodegen not found in PATH" >&2
@@ -23,9 +25,34 @@ if [[ ! -f "$PBXPROJ_PATH" ]]; then
   exit 1
 fi
 
-before_hash="$(shasum -a 256 "$PBXPROJ_PATH" | awk '{print $1}')"
-xcodegen generate --spec "$SPEC_FILE" --project "$XCODEGEN_ROOT" >/dev/null
-after_hash="$(shasum -a 256 "$PBXPROJ_PATH" | awk '{print $1}')"
+normalize_pbxproj() {
+  local src="$1"
+  local dst="$2"
+  sed -E \
+    -e 's/objectVersion = [0-9]+;/objectVersion = <normalized>;/g' \
+    -e 's/preferredProjectObjectVersion = [0-9]+;/preferredProjectObjectVersion = <normalized>;/g' \
+    -e 's/compatibilityVersion = "Xcode [^"]+";/compatibilityVersion = "Xcode <normalized>";/g' \
+    "$src" >"$dst"
+}
+
+before_norm="$(mktemp)"
+after_norm="$(mktemp)"
+project_backup="$(mktemp -d)"
+project_backup_path="${project_backup}/Dispel.xcodeproj"
+trap 'rm -f "$before_norm" "$after_norm"; rm -rf "$project_backup"' EXIT
+
+cp -R "$PROJECT_PATH" "$project_backup_path"
+normalize_pbxproj "${project_backup_path}/project.pbxproj" "$before_norm"
+before_hash="$(shasum -a 256 "$before_norm" | awk '{print $1}')"
+(
+  cd "$PROJECT_ROOT"
+  xcodegen generate --spec "$XCODEGEN_SPEC" --project "$XCODEGEN_PROJECT" >/dev/null
+)
+normalize_pbxproj "$PBXPROJ_PATH" "$after_norm"
+after_hash="$(shasum -a 256 "$after_norm" | awk '{print $1}')"
+
+rm -rf "$PROJECT_PATH"
+cp -R "$project_backup_path" "$PROJECT_PATH"
 
 if [[ "$before_hash" != "$after_hash" ]]; then
   echo "error: Xcode project is stale. Run: make xcodegen" >&2

@@ -36,7 +36,7 @@ xcodegen:
 	  exit 1; \
 	else \
 	  echo "--> Generating Xcode project from $(XCODEGEN_SPEC)"; \
-	  xcodegen generate --spec "$(XCODEGEN_SPEC)" --project "$(XCODEGEN_PROJECT)"; \
+	  cd "$(CURDIR)" && xcodegen generate --spec "$(XCODEGEN_SPEC)" --project "$(XCODEGEN_PROJECT)"; \
 	  echo "✅ Xcode project generated at $(PROJECT)"; \
 	fi
 
