@@ -54,6 +54,9 @@ targets:
         SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
         SWIFT_EMIT_LOC_STRINGS: YES
         SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY: YES
+      configs:
+        Debug:
+          ENABLE_TESTABILITY: YES
 
   DispelTests:
     type: bundle.unit-test
