@@ -38,6 +38,7 @@
 /* Begin PBXFileReference section */
 		08B0C1C0D3D672DB5942B7E3 /* DispelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DispelTests.swift; sourceTree = "<group>"; };
 		183F7FC87CECF959633AF1D1 /* Dispel.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Dispel.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		37F9078C2C57EA21079A665D /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
 		3C7EF45DB4A5315A5792842F /* StatusMenuController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusMenuController.swift; sourceTree = "<group>"; };
 		3C8F633E7155E9EF3614E414 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		4952FC2421DB9504F33FE03C /* EventTapManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventTapManager.swift; sourceTree = "<group>"; };
@@ -69,6 +70,7 @@
 		94B093CC8CDACCD9022336BF = {
 			isa = PBXGroup;
 			children = (
+				CB7424EAD692B165185CE638 /* Config */,
 				0313286C2C1F7E7488FCBC46 /* Dispel */,
 				EC66AEA0A3C4CB371723EE9B /* DispelTests */,
 				9D5CBB4D662E8F865A95721F /* DispelUITests */,
@@ -83,6 +85,14 @@
 				BDD4588CDDF50273205340EE /* DispelUITestsLaunchTests.swift */,
 			);
 			path = DispelUITests;
+			sourceTree = "<group>";
+		};
+		CB7424EAD692B165185CE638 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				37F9078C2C57EA21079A665D /* Base.xcconfig */,
+			);
+			path = Config;
 			sourceTree = "<group>";
 		};
 		EC66AEA0A3C4CB371723EE9B /* DispelTests */ = {
@@ -170,16 +180,16 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					0DB807FB5006B649B69860FE = {
-						DevelopmentTeam = "";
+						DevelopmentTeam = "$(DISPEL_DEVELOPMENT_TEAM)";
 						ProvisioningStyle = Manual;
 					};
 					94D1004842784ABD8FA65D6E = {
-						DevelopmentTeam = "";
+						DevelopmentTeam = "$(DISPEL_DEVELOPMENT_TEAM)";
 						ProvisioningStyle = Manual;
 						TestTargetID = 0DB807FB5006B649B69860FE;
 					};
 					F82BA8E7DF5DD1C72C642111 = {
-						DevelopmentTeam = "";
+						DevelopmentTeam = "$(DISPEL_DEVELOPMENT_TEAM)";
 						ProvisioningStyle = Manual;
 					};
 				};
@@ -301,7 +311,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Manual;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = "$(DISPEL_DEVELOPMENT_TEAM)";
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
@@ -313,6 +323,7 @@
 		};
 		3D9AB2F3568AE3AC21D9E51E /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 37F9078C2C57EA21079A665D /* Base.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -381,6 +392,7 @@
 		};
 		6B59C33167479985BEA0DE1B /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 37F9078C2C57EA21079A665D /* Base.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -417,7 +429,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Manual;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = "$(DISPEL_DEVELOPMENT_TEAM)";
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
